@@ -25,44 +25,60 @@ class MyHomePage extends StatelessWidget {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: InfoCard(title: 'NPM', content: npm),
-                ),
-                Expanded(
-                  child: InfoCard(title: 'Name', content: nama),
-                ),
-                Expanded(
-                  child: InfoCard(title: 'Class', content: kelas),
-                ),
-              ],
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 960),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final textScaler = MediaQuery.textScalerOf(context);
+                final minimumCardWidth = 180 * textScaler.scale(14) / 14;
+                final columns = (constraints.maxWidth / minimumCardWidth)
+                    .floor()
+                    .clamp(1, 3);
+                final cardWidth =
+                    (constraints.maxWidth - (columns - 1) * 10) / columns;
+
+                return Column(
+                  children: [
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        for (final card in [
+                          InfoCard(title: 'NPM', content: npm),
+                          InfoCard(title: 'Name', content: nama),
+                          InfoCard(title: 'Class', content: kelas),
+                        ])
+                          SizedBox(width: cardWidth, child: card),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    const Padding(
+                      padding: EdgeInsets.only(top: 16),
+                      child: Text(
+                        'Selamat datang di MyPortfolio Mobile!',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                    ),
+                    GridView.count(
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                      crossAxisCount: columns,
+                      mainAxisExtent: 100 + textScaler.scale(28),
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: items.map((item) => ItemCard(item)).toList(),
+                    ),
+                  ],
+                );
+              },
             ),
-            const SizedBox(height: 16),
-            const Padding(
-              padding: EdgeInsets.only(top: 16),
-              child: Text(
-                'Selamat datang di MyPortfolio Mobile!',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-              ),
-            ),
-            GridView.count(
-              padding: const EdgeInsets.all(20),
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
-              crossAxisCount: 3,
-              mainAxisExtent: 150,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              children: items.map((item) => ItemCard(item)).toList(),
-            ),
-          ],
+          ),
         ),
       ),
     );

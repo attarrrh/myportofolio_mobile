@@ -31,6 +31,7 @@ void main() {
 
     await tester.pumpWidget(const MyApp());
     expect(tester.takeException(), isNull);
+    await tester.ensureVisible(find.text('Tambah Proyek'));
     await tester.tap(find.text('Tambah Proyek'));
     await tester.pumpAndSettle();
     expect(
@@ -47,4 +48,36 @@ void main() {
     expect(find.text('Kamu telah menekan tombol Logout!'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  for (final size in [const Size(320, 568), const Size(960, 640)]) {
+    testWidgets('Menu supports large text at ${size.width} pixels', (
+      tester,
+    ) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = size;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MediaQuery(
+            data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+            child: const MyHomePage(),
+          ),
+        ),
+      );
+      expect(tester.takeException(), isNull);
+      expect(find.text('Attar Rais Hakam'), findsOneWidget);
+
+      for (final action in ['Lihat Proyek', 'Tambah Proyek', 'Logout']) {
+        await tester.ensureVisible(find.text(action));
+        await tester.tap(find.text(action));
+        await tester.pumpAndSettle();
+        expect(find.text('Kamu telah menekan tombol $action!'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await tester.pump(const Duration(seconds: 5));
+        await tester.pumpAndSettle();
+      }
+    });
+  }
 }
