@@ -7,8 +7,8 @@ void main() {
   testWidgets('Menu identity and all action messages', (tester) async {
     await tester.pumpWidget(const MyApp());
     expect(find.text('MyPortfolio'), findsOneWidget);
-    expect(find.text('2406000001'), findsOneWidget);
-    expect(find.text('Burhan'), findsOneWidget);
+    expect(find.text('2506656495'), findsOneWidget);
+    expect(find.text('Attar Rais Hakam'), findsOneWidget);
     expect(find.text('PBP A'), findsOneWidget);
     expect(find.byType(InfoCard), findsNWidgets(3));
     expect(find.byType(ItemCard), findsNWidgets(3));
