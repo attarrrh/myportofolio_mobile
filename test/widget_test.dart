@@ -9,7 +9,7 @@ void main() {
     expect(find.text('MyPortfolio'), findsOneWidget);
     expect(find.text('2506656495'), findsOneWidget);
     expect(find.text('Attar Rais Hakam'), findsOneWidget);
-    expect(find.text('PBP A'), findsOneWidget);
+    expect(find.text('PBP C'), findsOneWidget);
     expect(find.byType(InfoCard), findsNWidgets(3));
     expect(find.byType(ItemCard), findsNWidgets(3));
 
