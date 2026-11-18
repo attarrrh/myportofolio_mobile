@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:myportofolio_mobile/main.dart';
-import 'package:myportofolio_mobile/menu.dart';
-import 'package:myportofolio_mobile/project_form.dart';
+import 'package:myportofolio_mobile/screens/menu.dart';
+import 'package:myportofolio_mobile/screens/project_form.dart';
 
 Finder input(String label) => find.byWidgetPredicate(
   (widget) => widget is TextField && widget.decoration?.labelText == label,
@@ -62,6 +62,39 @@ void main() {
       isFalse,
     );
   });
+
+  testWidgets(
+    'Project button opens a form and Back restores the original menu',
+    (tester) async {
+      await tester.pumpWidget(const MyApp());
+      final originalMenu = tester.element(find.byType(MyHomePage));
+      await tester.tap(find.text('Tambah Proyek'));
+      await tester.pumpAndSettle();
+      expect(find.byType(ProjectFormPage), findsOneWidget);
+      expect(
+        Navigator.of(tester.element(find.byType(ProjectFormPage))).canPop(),
+        isTrue,
+      );
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
+
+      await fill(tester, 'Nama Proyek', 'Proyek dari menu');
+      await fill(
+        tester,
+        'Deskripsi Proyek',
+        'Dibuka lewat tombol Tambah Proyek',
+      );
+      await save(tester);
+      expect(find.text('Nama Proyek: Proyek dari menu'), findsOneWidget);
+      await tester.tap(find.widgetWithText(TextButton, 'OK'));
+      await tester.pumpAndSettle();
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.byType(ProjectFormPage), findsNothing);
+      expect(tester.element(find.byType(MyHomePage)), same(originalMenu));
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('Required fields reject empty and whitespace-only input', (
     tester,
