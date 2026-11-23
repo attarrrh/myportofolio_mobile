@@ -1,4 +1,4 @@
-Tugas 7
+###Tugas 7
 
 1. Jelaskan apa yang dimaksud dengan widget tree pada Flutter dan bagaimana hubungan induk-anak bekerja antar-widget!
 
@@ -46,3 +46,39 @@ kalau yang diubah kode native Android/iOS atau konfigurasi plugin native, perlu 
 AI Disclosure
 
 menggunakan ai untuk membantu evaluasi checklist tugas, memahami alur implementasi serta pemahaman tentang flatter, dan juga membantu menganalisis struktur aplikasi sesuai dengan ketentuan tugas
+
+
+
+
+
+###Tugas 8
+1. Jelaskan perbedaan antara Navigator.push(), Navigator.pushReplacement(), dan Navigator.pop(). Metode apa yang digunakan untuk membuka formulir dari kartu aksi? Jelaskan juga bagaimana opsi Home di drawer membawa pengguna kembali ke halaman utama.
+
+`Navigator.push()`: Menumpuk halaman baru di atas halaman lama (bisa kembali dengan tombol Back)
+`Navigator.pushReplacement()`: Mengganti halaman lama dengan halaman baru (halaman lama dihapus, tidak bisa kembali)
+`Navigator.pop()`: Menutup halaman saat ini dan kembali ke halaman sebelumnya
+
+untuk buka formulir dari kartu aksi menggunakan Navigator.push() agar pengguna bisa kembali ke halaman utama jika batal mengisi formulir
+
+Opsi Home di Drawer menggunakan Navigator.pushReplacement() untuk mengganti halaman aktif dengan halaman utama agar halaman tidak menumpuk (atau cukup Navigator.pop() jika sudah di halaman utama)
+
+2. Bagaimana susunan Scaffold, AppBar, dan Drawer membantu menjaga struktur halaman tetap konsisten? Berikan satu contoh penggunaan warna tema portofolio di lebih dari satu halaman.
+
+`Scaffold` menjadi kerangka dasar halaman yang seragam, `AppBar` menjaga tampilan judul dan tombol atas selalu konsisten, sedangkan `Drawer` menyediakan menu samping yang sama di setiap halaman
+
+Contohnya, warna indigo dipakai pada AppBar halaman Home dan halaman Add Project. Di halaman Home, warna itu menjadi latar AppBar bertuliskan “MyPortfolio”, sedangkan di halaman Add Project menjadi latar AppBar bertuliskan “Add Project Form” intinya agar tampilannya tetap selaras
+
+3. Mengapa tata letak tersebut dipilih untuk formulir? Jelaskan peran widget pengatur jarak dan widget penggulir ketika ruang layar terbatas.
+
+tata letak vertikal karna Layar HP berbentuk memanjang ke bawah, sehingga susunan ke bawah membuat kolom input lebih lebar, mudah dibaca, dan nyaman disentuh
+
+peran pengatur jarak & penggulir itu ketika layar sempit (misalnya tertutup keyboard), pengatur jarak (Padding/SizedBox) mencegah kolom saling menempel, sedangkan penggulir (SingleChildScrollView) memungkinkan layar digeser ke atas/bawah agar form tidak terpotong atau error (overflow)
+
+
+4. Apa peran GlobalKey<FormState>, validator, dan validate() saat tombol Simpan ditekan? Berikan satu contoh nilai yang ditolak oleh validasi dan jelaskan mengapa memilih jenis input atau papan ketik saja belum cukup.
+
+peran GlobalKey<FormState> menjadi penghubung antara tombol Simpan dan form. Saat tombol ditekan, validate() menjalankan semua fungsi validator di tiap kolom untuk mengecek apakah isian sudah benar baru setelah uti data dapat disimpan
+
+contoh nya adalah angka -500 pada kolom harga atau teks kosong/spasi. menggunakan (TextInputType.number) saja tidak cukup karena belum tentu bisa mecegah input kosong, input angka minus/nol, ataupun teks huruf yang dicopy-paste
+
+saya menggunakan ai untuk membantu memahami checklist tugas memahami alur penggunaan scaffold appbar dan drawer, membantu implementasi dengan menghubungkan navigasi dari halaman utama dan drawer, serta memperbaiki pengujian dan evaluasi akhir keseluruhan dengan meminta bantuan untuk mengecek hasilnya
