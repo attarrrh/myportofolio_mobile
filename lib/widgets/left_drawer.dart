@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:myportofolio_mobile/screens/menu.dart';
 import 'package:myportofolio_mobile/screens/project_form.dart';
+import 'package:myportofolio_mobile/screens/education_form.dart';
 
 class LeftDrawer extends StatelessWidget {
   const LeftDrawer({super.key});
@@ -54,6 +55,18 @@ class LeftDrawer extends StatelessWidget {
                 context,
                 MaterialPageRoute<void>(
                   builder: (context) => const ProjectFormPage(),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.school_outlined),
+            title: const Text('Add Education'),
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (context) => const EducationFormPage(),
                 ),
               );
             },
