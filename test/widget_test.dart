@@ -25,14 +25,23 @@ void main() {
     expect(find.text('Attar Rais Hakam'), findsOneWidget);
     expect(find.text('PBP C'), findsOneWidget);
     expect(find.byType(InfoCard), findsNWidgets(3));
-    expect(find.byType(ItemCard), findsNWidgets(3));
+    expect(find.byType(ItemCard), findsNWidgets(4));
 
-    for (final action in ['Lihat Proyek', 'Tambah Proyek', 'Logout']) {
+    for (final action in [
+      'Lihat Proyek',
+      'Tambah Proyek',
+      'Tambah Pendidikan',
+      'Logout',
+    ]) {
       await tester.tap(find.text(action));
       await tester.pumpAndSettle();
       expect(find.text('Kamu telah menekan tombol $action!'), findsOneWidget);
       expect(find.byType(SnackBar), findsOneWidget);
-      if (action == 'Tambah Proyek') await backToMenu(tester);
+      if (action == 'Tambah Proyek' || action == 'Tambah Pendidikan') {
+        await tester.binding.handlePopRoute();
+        await tester.pumpAndSettle();
+        expect(find.byType(MyHomePage), findsOneWidget);
+      }
       await tester.pump(const Duration(seconds: 5));
       await tester.pumpAndSettle();
     }
@@ -87,13 +96,22 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.text('Attar Rais Hakam'), findsOneWidget);
 
-      for (final action in ['Lihat Proyek', 'Tambah Proyek', 'Logout']) {
+      for (final action in [
+        'Lihat Proyek',
+        'Tambah Proyek',
+        'Tambah Pendidikan',
+        'Logout',
+      ]) {
         await tester.ensureVisible(find.text(action));
         await tester.tap(find.text(action));
         await tester.pumpAndSettle();
         expect(find.text('Kamu telah menekan tombol $action!'), findsOneWidget);
         expect(tester.takeException(), isNull);
-        if (action == 'Tambah Proyek') await backToMenu(tester);
+        if (action == 'Tambah Proyek' || action == 'Tambah Pendidikan') {
+          await tester.binding.handlePopRoute();
+          await tester.pumpAndSettle();
+          expect(find.byType(MyHomePage), findsOneWidget);
+        }
         await tester.pump(const Duration(seconds: 5));
         await tester.pumpAndSettle();
       }

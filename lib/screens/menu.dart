@@ -74,7 +74,7 @@ class MyHomePage extends StatelessWidget {
                       crossAxisSpacing: 10,
                       mainAxisSpacing: 10,
                       crossAxisCount: columns,
-                      mainAxisExtent: 100 + textScaler.scale(28),
+                      mainAxisExtent: 120 + textScaler.scale(44),
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       children: items.map((item) => ItemCard(item)).toList(),
