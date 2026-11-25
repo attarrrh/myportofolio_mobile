@@ -1,9 +1,20 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:myportofolio_mobile/main.dart';
 import 'package:myportofolio_mobile/screens/menu.dart';
+import 'package:myportofolio_mobile/screens/project_list_screen.dart';
 import 'package:myportofolio_mobile/screens/project_form.dart';
+import 'package:myportofolio_mobile/services/api_client.dart';
 import 'package:myportofolio_mobile/widgets/project_card.dart';
+import 'package:provider/provider.dart';
+
+Widget appWithEmptyProjects() => MyApp(
+  apiClient: ApiClient(
+    client: MockClient((_) async => http.Response('[]', 200)),
+  ),
+);
 
 Future<void> backToMenu(WidgetTester tester) async {
   expect(find.byType(ProjectFormPage), findsOneWidget);
@@ -19,7 +30,7 @@ Future<void> backToMenu(WidgetTester tester) async {
 
 void main() {
   testWidgets('Menu identity and all action messages', (tester) async {
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(appWithEmptyProjects());
     expect(find.text('MyPortfolio'), findsOneWidget);
     expect(find.text('2506656495'), findsOneWidget);
     expect(find.text('Attar Rais Hakam'), findsOneWidget);
@@ -37,6 +48,12 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Kamu telah menekan tombol $action!'), findsOneWidget);
       expect(find.byType(SnackBar), findsOneWidget);
+      if (action == 'Lihat Proyek') {
+        expect(find.byType(ProjectListScreen), findsOneWidget);
+        expect(find.text('No projects found.'), findsOneWidget);
+        await tester.binding.handlePopRoute();
+        await tester.pumpAndSettle();
+      }
       if (action == 'Tambah Proyek' || action == 'Tambah Pendidikan') {
         await tester.binding.handlePopRoute();
         await tester.pumpAndSettle();
@@ -53,7 +70,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(appWithEmptyProjects());
     expect(tester.takeException(), isNull);
     await tester.ensureVisible(find.text('Tambah Proyek'));
     await tester.tap(find.text('Tambah Proyek'));
@@ -84,13 +101,18 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
 
       await tester.pumpWidget(
-        MaterialApp(
-          builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(context)
-                .copyWith(textScaler: const TextScaler.linear(2)),
-            child: child!,
+        Provider<ApiClient>.value(
+          value: ApiClient(
+            client: MockClient((_) async => http.Response('[]', 200)),
           ),
-          home: const MyHomePage(),
+          child: MaterialApp(
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context)
+                  .copyWith(textScaler: const TextScaler.linear(2)),
+              child: child!,
+            ),
+            home: const MyHomePage(),
+          ),
         ),
       );
       expect(tester.takeException(), isNull);
@@ -107,6 +129,11 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('Kamu telah menekan tombol $action!'), findsOneWidget);
         expect(tester.takeException(), isNull);
+        if (action == 'Lihat Proyek') {
+          expect(find.byType(ProjectListScreen), findsOneWidget);
+          await tester.binding.handlePopRoute();
+          await tester.pumpAndSettle();
+        }
         if (action == 'Tambah Proyek' || action == 'Tambah Pendidikan') {
           await tester.binding.handlePopRoute();
           await tester.pumpAndSettle();
