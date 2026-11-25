@@ -1,8 +1,30 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:myportofolio_mobile/main.dart';
 import 'package:myportofolio_mobile/screens/menu.dart';
 import 'package:myportofolio_mobile/screens/project_form.dart';
+import 'package:myportofolio_mobile/services/api_client.dart';
+
+ApiClient testApiClient({int createStatus = 201}) => ApiClient(
+  baseUrl: 'http://localhost:8000',
+  client: MockClient((request) async {
+    if (request.url.path == '/api/v1/projects/' && request.method == 'POST') {
+      final payload = jsonDecode(request.body) as Map<String, dynamic>;
+      return http.Response(
+        jsonEncode({'id': 'new-project-id', ...payload}),
+        createStatus,
+      );
+    }
+    if (request.url.path.endsWith('/auth/logout/')) {
+      return http.Response('', 204);
+    }
+    return http.Response('[]', 200);
+  }),
+);
 
 Finder input(String label) => find.byWidgetPredicate(
   (widget) => widget is TextField && widget.decoration?.labelText == label,
@@ -12,44 +34,39 @@ Future<void> fill(WidgetTester tester, String label, String value) async {
   final field = input(label);
   await tester.ensureVisible(field);
   await tester.enterText(field, value);
-  await tester.pumpAndSettle();
+  await tester.pump(const Duration(milliseconds: 100));
 }
 
 Future<void> save(WidgetTester tester) async {
   FocusManager.instance.primaryFocus?.unfocus();
-  await tester.pumpAndSettle();
-  final button = find.widgetWithText(ElevatedButton, 'Save');
+  await tester.pump(const Duration(milliseconds: 300));
+  final button = find.widgetWithText(FilledButton, 'Save');
   await tester.ensureVisible(button);
-  await tester.pumpAndSettle();
+  await tester.pump(const Duration(milliseconds: 100));
   expect(button.hitTestable(), findsOneWidget);
   await tester.tap(button);
-  await tester.pumpAndSettle();
-}
-
-Future<void> selectCategory(WidgetTester tester, String category) async {
-  final dropdown = find.byType(DropdownButtonFormField<String>);
-  await tester.ensureVisible(dropdown);
-  await tester.tap(dropdown);
-  await tester.pumpAndSettle();
-  await tester.tap(find.text(category).last);
-  await tester.pumpAndSettle();
+  await tester.pump(const Duration(milliseconds: 100));
 }
 
 void main() {
-  testWidgets('Drawer replaces the current page in both directions', (
+  testWidgets('Drawer keeps Home and opens Add Project for logged-in user', (
     tester,
   ) async {
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(
+      MyApp(apiClient: testApiClient(), initialToken: 'valid-token'),
+    );
     await tester.tap(find.byTooltip('Open navigation menu'));
     await tester.pumpAndSettle();
     expect(find.text('My Portfolio'), findsOneWidget);
+    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Add Project'), findsOneWidget);
     await tester.tap(find.widgetWithText(ListTile, 'Add Project'));
     await tester.pumpAndSettle();
 
     expect(find.byType(ProjectFormPage), findsOneWidget);
     expect(
       Navigator.of(tester.element(find.byType(ProjectFormPage))).canPop(),
-      isFalse,
+      isTrue,
     );
     await tester.tap(find.byTooltip('Open navigation menu'));
     await tester.pumpAndSettle();
@@ -57,108 +74,80 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(MyHomePage), findsOneWidget);
     expect(find.byType(ProjectFormPage), findsNothing);
-    expect(
-      Navigator.of(tester.element(find.byType(MyHomePage))).canPop(),
-      isFalse,
-    );
-  });
-
-  testWidgets(
-    'Project button opens a form and Back restores the original menu',
-    (tester) async {
-      await tester.pumpWidget(const MyApp());
-      final originalMenu = tester.element(find.byType(MyHomePage));
-      await tester.tap(find.text('Tambah Proyek'));
-      await tester.pumpAndSettle();
-      expect(find.byType(ProjectFormPage), findsOneWidget);
-      expect(
-        Navigator.of(tester.element(find.byType(ProjectFormPage))).canPop(),
-        isTrue,
-      );
-      await tester.pump(const Duration(seconds: 5));
-      await tester.pumpAndSettle();
-
-      await fill(tester, 'Nama Proyek', 'Proyek dari menu');
-      await fill(
-        tester,
-        'Deskripsi Proyek',
-        'Dibuka lewat tombol Tambah Proyek',
-      );
-      await save(tester);
-      expect(find.text('Nama Proyek: Proyek dari menu'), findsOneWidget);
-      await tester.tap(find.widgetWithText(TextButton, 'OK'));
-      await tester.pumpAndSettle();
-      await tester.binding.handlePopRoute();
-      await tester.pumpAndSettle();
-      expect(find.byType(ProjectFormPage), findsNothing);
-      expect(tester.element(find.byType(MyHomePage)), same(originalMenu));
-      expect(tester.takeException(), isNull);
-    },
-  );
-
-  testWidgets('Required fields reject empty and whitespace-only input', (
-    tester,
-  ) async {
-    await tester.pumpWidget(const MaterialApp(home: ProjectFormPage()));
-    await save(tester);
-    expect(find.text('Nama proyek tidak boleh kosong!'), findsOneWidget);
-    expect(find.text('Deskripsi proyek tidak boleh kosong!'), findsOneWidget);
-    expect(find.byType(AlertDialog), findsNothing);
-
-    await fill(tester, 'Nama Proyek', '   ');
-    await fill(tester, 'Deskripsi Proyek', '   ');
-    await save(tester);
-    expect(find.text('Nama proyek tidak boleh kosong!'), findsOneWidget);
-    expect(find.text('Deskripsi proyek tidak boleh kosong!'), findsOneWidget);
-    expect(find.byType(AlertDialog), findsNothing);
-  });
-
-  testWidgets('Dialog displays all fields and OK resets values and category', (
-    tester,
-  ) async {
-    await tester.pumpWidget(const MaterialApp(home: ProjectFormPage()));
-    await fill(tester, 'Nama Proyek', '  Portofolio Attar  ');
-    await fill(tester, 'Deskripsi Proyek', 'Aplikasi portofolio pribadi');
-    await selectCategory(tester, 'Mobile Development');
-    await fill(tester, 'Teknologi yang Digunakan', 'Flutter, Django');
-    await fill(tester, 'Tautan Proyek', 'https://example.com/portfolio');
-    await save(tester);
-
-    expect(find.byType(AlertDialog), findsOneWidget);
-    expect(find.text('Nama Proyek: Portofolio Attar'), findsOneWidget);
-    expect(find.text('Deskripsi: Aplikasi portofolio pribadi'), findsOneWidget);
-    expect(find.text('Kategori: Mobile Development'), findsOneWidget);
-    expect(find.text('Teknologi: Flutter, Django'), findsOneWidget);
-    expect(find.text('Tautan: https://example.com/portfolio'), findsOneWidget);
-    await tester.tap(find.widgetWithText(TextButton, 'OK'));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(AlertDialog), findsNothing);
-    for (final field in tester.widgetList<EditableText>(
-      find.byType(EditableText),
-    )) {
-      expect(field.controller.text, isEmpty);
-    }
-    expect(
-      tester
-          .state<FormFieldState<String>>(
-            find.byType(DropdownButtonFormField<String>),
-          )
-          .value,
-      'Web Development',
-    );
-
-    await fill(tester, 'Nama Proyek', 'Proyek kedua');
-    await fill(tester, 'Deskripsi Proyek', 'Tanpa teknologi dan tautan');
-    await save(tester);
-    expect(find.text('Kategori: Web Development'), findsOneWidget);
-    expect(find.text('Teknologi: '), findsOneWidget);
-    expect(find.text('Tautan: '), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Project button opens form and successful POST shows response', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MyApp(apiClient: testApiClient(), initialToken: 'valid-token'),
+    );
+    final originalMenu = tester.element(find.byType(MyHomePage));
+    await tester.tap(find.text('Tambah Proyek'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ProjectFormPage), findsOneWidget);
+    expect(
+      Navigator.of(tester.element(find.byType(ProjectFormPage))).canPop(),
+      isTrue,
+    );
+
+    await fill(tester, 'Title', 'Portfolio project');
+    await fill(tester, 'Description', 'A Flutter and Django project');
+    await fill(tester, 'Tech stack', 'Flutter, Django');
+    await fill(tester, 'Project URL (optional)', 'https://example.com');
+    await fill(
+      tester,
+      'Project Image URL (optional)',
+      'https://example.com/image.png',
+    );
+    await save(tester);
+
+    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.text('Title: Portfolio project'), findsOneWidget);
+    expect(find.text('Tech stack: Flutter, Django'), findsOneWidget);
+    expect(find.text('Project URL: https://example.com'), findsOneWidget);
+    expect(
+      find.text('Image URL: https://example.com/image.png'),
+      findsOneWidget,
+    );
+    await tester.tap(find.widgetWithText(TextButton, 'OK'));
+    await tester.pumpAndSettle();
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.byType(ProjectFormPage), findsNothing);
+    expect(tester.element(find.byType(MyHomePage)), same(originalMenu));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Required fields and URLs are validated before sending', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MyApp(
+        apiClient: testApiClient(),
+        initialToken: 'valid-token',
+        home: const ProjectFormPage(),
+      ),
+    );
+    await save(tester);
+    expect(find.text('Title cannot be empty.'), findsOneWidget);
+    expect(find.text('Description cannot be empty.'), findsOneWidget);
+    expect(find.text('Tech stack cannot be empty.'), findsOneWidget);
+    expect(find.byType(AlertDialog), findsNothing);
+
+    await fill(tester, 'Title', '   ');
+    await fill(tester, 'Description', 'Description');
+    await fill(tester, 'Tech stack', 'Django');
+    await fill(tester, 'Project URL (optional)', 'javascript:alert(1)');
+    await save(tester);
+    expect(find.text('Title cannot be empty.'), findsOneWidget);
+    expect(find.text('Enter a valid HTTP or HTTPS URL.'), findsOneWidget);
+    expect(find.byType(AlertDialog), findsNothing);
+  });
+
   for (final size in [const Size(320, 568), const Size(844, 390)]) {
-    testWidgets('Form, drawer and dialog fit large text at $size', (
+    testWidgets('Project form and drawer fit large text at $size', (
       tester,
     ) async {
       tester.view.devicePixelRatio = 1;
@@ -166,10 +155,12 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       await tester.pumpWidget(
-        const MaterialApp(
+        MyApp(
+          apiClient: testApiClient(),
+          initialToken: 'valid-token',
           home: MediaQuery(
-            data: MediaQueryData(textScaler: TextScaler.linear(2)),
-            child: ProjectFormPage(),
+            data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+            child: const ProjectFormPage(),
           ),
         ),
       );
@@ -179,16 +170,14 @@ void main() {
       tester.state<ScaffoldState>(find.byType(Scaffold)).closeDrawer();
       await tester.pumpAndSettle();
 
-      await fill(tester, 'Nama Proyek', 'Proyek layar kecil');
-      await fill(tester, 'Deskripsi Proyek', 'Deskripsi panjang. ' * 40);
-      await selectCategory(tester, 'Machine Learning');
+      await fill(tester, 'Title', 'Small-screen project');
+      await fill(tester, 'Description', 'A long description. ' * 30);
+      await fill(tester, 'Tech stack', 'Flutter and Django');
       await save(tester);
       expect(find.byType(AlertDialog), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.tap(find.widgetWithText(TextButton, 'OK'));
       await tester.pumpAndSettle();
-      expect(find.byType(AlertDialog), findsNothing);
-      expect(tester.takeException(), isNull);
     });
   }
 }

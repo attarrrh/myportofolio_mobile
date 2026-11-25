@@ -34,7 +34,7 @@ void main() {
   testWidgets('Education card opens the form and Back returns home', (
     tester,
   ) async {
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(const MyApp(initialToken: 'education-token'));
     await tester.tap(find.text('Tambah Pendidikan'));
     await tester.pumpAndSettle();
     expect(find.byType(EducationFormPage), findsOneWidget);
@@ -51,7 +51,7 @@ void main() {
   testWidgets('Drawer opens education and Home returns to the main page', (
     tester,
   ) async {
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(const MyApp(initialToken: 'education-token'));
     await tester.tap(find.byTooltip('Open navigation menu'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ListTile, 'Add Education'));
@@ -59,7 +59,7 @@ void main() {
     expect(find.byType(EducationFormPage), findsOneWidget);
     expect(
       Navigator.of(tester.element(find.byType(EducationFormPage))).canPop(),
-      isFalse,
+      isTrue,
     );
 
     await tester.tap(find.byTooltip('Open navigation menu'));
@@ -74,7 +74,9 @@ void main() {
   testWidgets('Required fields and graduation year are validated', (
     tester,
   ) async {
-    await tester.pumpWidget(const MaterialApp(home: EducationFormPage()));
+    await tester.pumpWidget(
+      const MyApp(initialToken: 'education-token', home: EducationFormPage()),
+    );
     await submit(tester);
     expect(find.text('Institusi wajib diisi.'), findsOneWidget);
     expect(find.text('Gelar wajib diisi.'), findsOneWidget);
@@ -95,7 +97,9 @@ void main() {
   testWidgets('Valid form shows all education details in summary dialog', (
     tester,
   ) async {
-    await tester.pumpWidget(const MaterialApp(home: EducationFormPage()));
+    await tester.pumpWidget(
+      const MyApp(initialToken: 'education-token', home: EducationFormPage()),
+    );
     await fillEducation(tester);
     await submit(tester);
 
@@ -118,7 +122,9 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(const MaterialApp(home: EducationFormPage()));
+    await tester.pumpWidget(
+      const MyApp(initialToken: 'education-token', home: EducationFormPage()),
+    );
     await fillEducation(tester);
     await submit(tester);
     expect(find.byType(AlertDialog), findsOneWidget);

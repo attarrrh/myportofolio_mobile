@@ -8,12 +8,12 @@ import 'package:myportofolio_mobile/screens/project_list_screen.dart';
 import 'package:myportofolio_mobile/screens/project_form.dart';
 import 'package:myportofolio_mobile/services/api_client.dart';
 import 'package:myportofolio_mobile/widgets/project_card.dart';
-import 'package:provider/provider.dart';
 
 Widget appWithEmptyProjects() => MyApp(
   apiClient: ApiClient(
     client: MockClient((_) async => http.Response('[]', 200)),
   ),
+  initialToken: 'test-token',
 );
 
 Future<void> backToMenu(WidgetTester tester) async {
@@ -46,7 +46,11 @@ void main() {
     ]) {
       await tester.tap(find.text(action));
       await tester.pumpAndSettle();
-      expect(find.text('Kamu telah menekan tombol $action!'), findsOneWidget);
+      if (action == 'Logout') {
+        expect(find.text('Logged out.'), findsOneWidget);
+      } else {
+        expect(find.text('Kamu telah menekan tombol $action!'), findsOneWidget);
+      }
       expect(find.byType(SnackBar), findsOneWidget);
       if (action == 'Lihat Proyek') {
         expect(find.byType(ProjectListScreen), findsOneWidget);
@@ -84,10 +88,6 @@ void main() {
     tester.view.physicalSize = const Size(640, 320);
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
-    await tester.ensureVisible(find.text('Logout'));
-    await tester.tap(find.text('Logout'));
-    await tester.pumpAndSettle();
-    expect(find.text('Kamu telah menekan tombol Logout!'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -101,17 +101,14 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
 
       await tester.pumpWidget(
-        Provider<ApiClient>.value(
-          value: ApiClient(
+        MyApp(
+          apiClient: ApiClient(
             client: MockClient((_) async => http.Response('[]', 200)),
           ),
-          child: MaterialApp(
-            builder: (context, child) => MediaQuery(
-              data: MediaQuery.of(context)
-                  .copyWith(textScaler: const TextScaler.linear(2)),
-              child: child!,
-            ),
-            home: const MyHomePage(),
+          initialToken: 'test-token',
+          home: MediaQuery(
+            data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+            child: const MyHomePage(),
           ),
         ),
       );
@@ -127,7 +124,14 @@ void main() {
         await tester.ensureVisible(find.text(action));
         await tester.tap(find.text(action));
         await tester.pumpAndSettle();
-        expect(find.text('Kamu telah menekan tombol $action!'), findsOneWidget);
+        if (action == 'Logout') {
+          expect(find.text('Logged out.'), findsOneWidget);
+        } else {
+          expect(
+            find.text('Kamu telah menekan tombol $action!'),
+            findsOneWidget,
+          );
+        }
         expect(tester.takeException(), isNull);
         if (action == 'Lihat Proyek') {
           expect(find.byType(ProjectListScreen), findsOneWidget);
