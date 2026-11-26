@@ -10,6 +10,20 @@ import 'package:provider/provider.dart';
 class LeftDrawer extends StatelessWidget {
   const LeftDrawer({super.key});
 
+  Future<void> _open(
+    BuildContext context,
+    Widget page, {
+    bool protected = false,
+  }) async {
+    final navigator = Navigator.of(context);
+    navigator.pop();
+    // The navigator remains mounted after the drawer closes.
+    if (protected && !await ensureLoggedIn(navigator.context)) return;
+    if (!navigator.mounted) return;
+    navigator.popUntil((route) => route.isFirst);
+    await navigator.push<void>(MaterialPageRoute<void>(builder: (_) => page));
+  }
+
   @override
   Widget build(BuildContext context) {
     final isLoggedIn = context.watch<AuthState>().isLoggedIn;
@@ -50,55 +64,25 @@ class LeftDrawer extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.add_circle_outline),
             title: const Text('Add Project'),
-            onTap: () async {
-              final allowed = await ensureLoggedIn(context);
-              if (!context.mounted || !allowed) return;
-              Navigator.pop(context);
-              Navigator.push<void>(
-                context,
-                MaterialPageRoute<void>(
-                  builder: (context) => const ProjectFormPage(),
-                ),
-              );
-            },
+            onTap: () =>
+                _open(context, const ProjectFormPage(), protected: true),
           ),
           ListTile(
             leading: const Icon(Icons.folder_open_outlined),
             title: const Text('View Projects'),
-            onTap: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute<void>(
-                  builder: (context) => const ProjectListScreen(),
-                ),
-              );
-            },
+            onTap: () => _open(context, const ProjectListScreen()),
           ),
           ListTile(
             leading: const Icon(Icons.school_outlined),
             title: const Text('Add Education'),
-            onTap: () async {
-              final allowed = await ensureLoggedIn(context);
-              if (!context.mounted || !allowed) return;
-              Navigator.pop(context);
-              Navigator.push<void>(
-                context,
-                MaterialPageRoute<void>(
-                  builder: (context) => const EducationFormPage(),
-                ),
-              );
-            },
+            onTap: () =>
+                _open(context, const EducationFormPage(), protected: true),
           ),
           if (!isLoggedIn)
             ListTile(
               leading: const Icon(Icons.login),
               title: const Text('Login'),
-              onTap: () => Navigator.push<void>(
-                context,
-                MaterialPageRoute<void>(
-                  builder: (context) => const LoginScreen(),
-                ),
-              ),
+              onTap: () => _open(context, const LoginScreen()),
             ),
           if (isLoggedIn)
             ListTile(
@@ -107,15 +91,18 @@ class LeftDrawer extends StatelessWidget {
               onTap: () async {
                 final messenger = ScaffoldMessenger.of(context);
                 final authState = context.read<AuthState>();
-                Navigator.pop(context);
+                final navigator = Navigator.of(context);
+                navigator.pop();
                 try {
                   await authState.logout();
-                  if (!context.mounted) return;
+                  if (!navigator.mounted) return;
+                  navigator.popUntil((route) => route.isFirst);
                   messenger.showSnackBar(
                     const SnackBar(content: Text('Logged out.')),
                   );
                 } catch (_) {
-                  if (!context.mounted) return;
+                  if (!navigator.mounted) return;
+                  navigator.popUntil((route) => route.isFirst);
                   messenger.showSnackBar(
                     const SnackBar(content: Text('Logged out on this device.')),
                   );
