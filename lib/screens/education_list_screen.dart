@@ -23,7 +23,9 @@ class _EducationListScreenState extends State<EducationListScreen> {
 
   Future<void> _reload() async {
     final future = context.read<ApiClient>().getEducation();
-    setState(() => _educationsFuture = future);
+    setState(() {
+      _educationsFuture = future;
+    });
     try {
       await future;
     } catch (_) {

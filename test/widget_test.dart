@@ -36,7 +36,7 @@ void main() {
     expect(find.text('Attar Rais Hakam'), findsOneWidget);
     expect(find.text('PBP C'), findsOneWidget);
     expect(find.byType(InfoCard), findsNWidgets(3));
-    expect(find.byType(ItemCard), findsNWidgets(4));
+    expect(find.byType(ItemCard), findsNWidgets(5));
 
     for (final action in [
       'Lihat Proyek',

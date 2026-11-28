@@ -1,8 +1,29 @@
+import 'dart:convert';
+
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:myportofolio_mobile/services/api_client.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:myportofolio_mobile/main.dart';
 import 'package:myportofolio_mobile/screens/education_form.dart';
 import 'package:myportofolio_mobile/screens/menu.dart';
+
+Widget educationApp({Widget? home}) => MyApp(
+  initialToken: 'education-token',
+  home: home,
+  apiClient: ApiClient(
+    client: MockClient(
+      (request) async => http.Response(
+        jsonEncode({
+          'id': 'education-id',
+          ...jsonDecode(request.body) as Map<String, dynamic>,
+        }),
+        201,
+      ),
+    ),
+  ),
+);
 
 Finder field(String label) => find.byWidgetPredicate(
   (widget) => widget is TextField && widget.decoration?.labelText == label,
@@ -34,7 +55,7 @@ void main() {
   testWidgets('Education card opens the form and Back returns home', (
     tester,
   ) async {
-    await tester.pumpWidget(const MyApp(initialToken: 'education-token'));
+    await tester.pumpWidget(educationApp());
     await tester.tap(find.text('Tambah Pendidikan'));
     await tester.pumpAndSettle();
     expect(find.byType(EducationFormPage), findsOneWidget);
@@ -51,7 +72,7 @@ void main() {
   testWidgets('Drawer opens education and Home returns to the main page', (
     tester,
   ) async {
-    await tester.pumpWidget(const MyApp(initialToken: 'education-token'));
+    await tester.pumpWidget(educationApp());
     await tester.tap(find.byTooltip('Open navigation menu'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ListTile, 'Add Education'));
@@ -74,9 +95,7 @@ void main() {
   testWidgets('Required fields and graduation year are validated', (
     tester,
   ) async {
-    await tester.pumpWidget(
-      const MyApp(initialToken: 'education-token', home: EducationFormPage()),
-    );
+    await tester.pumpWidget(educationApp(home: const EducationFormPage()));
     await submit(tester);
     expect(find.text('Institusi wajib diisi.'), findsOneWidget);
     expect(find.text('Gelar wajib diisi.'), findsOneWidget);
@@ -97,9 +116,7 @@ void main() {
   testWidgets('Valid form shows all education details in summary dialog', (
     tester,
   ) async {
-    await tester.pumpWidget(
-      const MyApp(initialToken: 'education-token', home: EducationFormPage()),
-    );
+    await tester.pumpWidget(educationApp(home: const EducationFormPage()));
     await fillEducation(tester);
     await submit(tester);
 
@@ -122,9 +139,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(
-      const MyApp(initialToken: 'education-token', home: EducationFormPage()),
-    );
+    await tester.pumpWidget(educationApp(home: const EducationFormPage()));
     await fillEducation(tester);
     await submit(tester);
     expect(find.byType(AlertDialog), findsOneWidget);
