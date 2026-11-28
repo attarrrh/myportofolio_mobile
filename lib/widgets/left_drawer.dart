@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:myportofolio_mobile/screens/education_list_screen.dart';
 import 'package:myportofolio_mobile/screens/project_form.dart';
 import 'package:myportofolio_mobile/screens/education_form.dart';
 import 'package:myportofolio_mobile/screens/project_list_screen.dart';
@@ -77,6 +78,11 @@ class LeftDrawer extends StatelessWidget {
             title: const Text('Add Education'),
             onTap: () =>
                 _open(context, const EducationFormPage(), protected: true),
+          ),
+          ListTile(
+            leading: const Icon(Icons.school_outlined),
+            title: const Text('View Education'),
+            onTap: () => _open(context, const EducationListScreen()),
           ),
           if (!isLoggedIn)
             ListTile(

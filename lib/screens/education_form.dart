@@ -1,5 +1,11 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:myportofolio_mobile/widgets/left_drawer.dart';
+import 'package:myportofolio_mobile/models/education.dart';
+import 'package:myportofolio_mobile/services/api_client.dart';
+import 'package:myportofolio_mobile/services/auth_state.dart';
+import 'package:myportofolio_mobile/widgets/auth_guard.dart';
+import 'package:myportofolio_mobile/screens/education_list_screen.dart';
+import 'package:provider/provider.dart';
 
 class EducationFormPage extends StatefulWidget {
   const EducationFormPage({super.key});
@@ -32,33 +38,101 @@ class _EducationFormPageState extends State<EducationFormPage> {
     return null;
   }
 
-  Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
+  bool _isSubmitting = false;
 
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Ringkasan Pendidikan'),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Institusi: ${_institutionController.text.trim()}'),
-              Text('Gelar: ${_degreeController.text.trim()}'),
-              Text('Program studi: ${_majorController.text.trim()}'),
-              Text('Tahun lulus: ${_yearController.text.trim()}'),
-            ],
-          ),
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate() || _isSubmitting) return;
+    if (!await ensureLoggedIn(context) || !mounted) return;
+    final auth = context.read<AuthState>();
+    final token = auth.token;
+    if (token == null) return;
+    setState(() => _isSubmitting = true);
+    try {
+      final created = await context.read<ApiClient>().createEducation(
+        Education(
+          institution: _institutionController.text.trim(),
+          degree: _degreeController.text.trim(),
+          major: _majorController.text.trim(),
+          graduationYear: int.parse(_yearController.text.trim()),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Tutup'),
+        token: token,
+      );
+      if (!mounted) return;
+      final viewList = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Pendidikan tersimpan'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Institusi: ${created.institution}'),
+                Text('Gelar: ${created.degree}'),
+                Text('Program studi: ${created.major}'),
+                Text('Tahun lulus: ${created.graduationYear}'),
+              ],
+            ),
           ),
-        ],
-      ),
-    );
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Tutup'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Lihat Pendidikan'),
+            ),
+          ],
+        ),
+      );
+      if (!mounted) return;
+      _formKey.currentState!.reset();
+      for (final controller in [
+        _institutionController,
+        _degreeController,
+        _majorController,
+        _yearController,
+      ]) {
+        controller.clear();
+      }
+      if (viewList == true) {
+        Navigator.of(context).pushReplacement<void, void>(
+          MaterialPageRoute<void>(builder: (_) => const EducationListScreen()),
+        );
+      }
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      if (error.statusCode == 401) {
+        try {
+          await auth.logout();
+        } catch (_) {
+          /* Local token is cleared even if revocation fails. */
+        }
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Sesi berakhir. Silakan login kembali.'),
+          ),
+        );
+        await ensureLoggedIn(context);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Gagal menyimpan pendidikan (HTTP ${error.statusCode}).',
+            ),
+          ),
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tidak dapat terhubung ke server.')),
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   @override
@@ -137,9 +211,9 @@ class _EducationFormPageState extends State<EducationFormPage> {
                     Align(
                       alignment: Alignment.centerRight,
                       child: FilledButton.icon(
-                        onPressed: _save,
+                        onPressed: _isSubmitting ? null : _save,
                         icon: const Icon(Icons.save_outlined),
-                        label: const Text('Simpan'),
+                        label: Text(_isSubmitting ? 'Menyimpan...' : 'Simpan'),
                       ),
                     ),
                   ],
